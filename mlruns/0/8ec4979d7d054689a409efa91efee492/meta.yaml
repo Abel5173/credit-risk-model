@@ -1,0 +1,14 @@
+artifact_uri: file:///home/abel/Desktop/Projects/Tenx-Projects/credit-risk-model/mlruns/0/8ec4979d7d054689a409efa91efee492/artifacts
+end_time: 1751373109161
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 8ec4979d7d054689a409efa91efee492
+run_name: LogisticRegression
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1751373105908
+status: 3
+tags: []
+user_id: abel
