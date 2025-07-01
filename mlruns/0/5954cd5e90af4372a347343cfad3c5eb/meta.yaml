@@ -1,0 +1,14 @@
+artifact_uri: file:///home/abel/Desktop/Projects/Tenx-Projects/credit-risk-model/mlruns/0/5954cd5e90af4372a347343cfad3c5eb/artifacts
+end_time: 1751373140622
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 5954cd5e90af4372a347343cfad3c5eb
+run_name: RandomForest
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1751373138187
+status: 3
+tags: []
+user_id: abel
