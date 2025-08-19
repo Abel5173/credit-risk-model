@@ -1,11 +1,12 @@
 from pydantic import BaseModel
+from typing import Optional
 
 
 class PredictRequest(BaseModel):
     TransactionId: str
     BatchId: str
     AccountId: str
-    SubscriptionId: str
+    SubscriptionId: Optional[str] = ""
     CurrencyCode: str
     CountryCode: float
     ProviderId: str
@@ -13,11 +14,11 @@ class PredictRequest(BaseModel):
     ProductCategory: str
     ChannelId: str
     Amount: float
-    Value: float
+    Value: Optional[float] = None
     TransactionStartTime: str
-    PricingStrategy: float
-    FraudResult: int
-    # Unnamed: 16 and Unnamed: 17 are likely artifacts, so omitted
+    PricingStrategy: Optional[float] = None
+    FraudResult: Optional[int] = 0
+    # Unnamed: 16 and Unnamed: 17 omitted
 
 
 class PredictResponse(BaseModel):

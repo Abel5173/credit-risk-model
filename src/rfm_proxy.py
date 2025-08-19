@@ -2,19 +2,21 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 import os
+from typing import Iterable, Tuple
+from src.utils import data_generator, timer_decorator, profile_context
 
 
+@timer_decorator
 def calculate_rfm(
-    df,
-    customer_id_col="CustomerId",
-    date_col="TransactionStartTime",
-    amount_col="Amount",
-    snapshot_date=None,
-):
-    """
-    Calculate Recency, Frequency, and Monetary (RFM) metrics for each customer.
-    """
-    df[date_col] = pd.to_datetime(df[date_col])
+    df: pd.DataFrame,
+    customer_id_col: str = "CustomerId",
+    date_col: str = "TransactionStartTime",
+    amount_col: str = "Amount",
+    snapshot_date: pd.Timestamp | None = None,
+) -> pd.DataFrame:
+    """Calculate RFM on a single DataFrame (non-streaming)."""
+    df = df.copy()
+    df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
     if snapshot_date is None:
         snapshot_date = df[date_col].max() + pd.Timedelta(days=1)
     rfm = (
@@ -38,42 +40,81 @@ def calculate_rfm(
     return rfm
 
 
-def cluster_rfm(rfm, n_clusters=3, random_state=42):
-    """
-    Scale RFM features and cluster customers using KMeans.
-    """
+@timer_decorator
+def calculate_rfm_streaming(
+    batches: Iterable[pd.DataFrame],
+    customer_id_col: str = "CustomerId",
+    date_col: str = "TransactionStartTime",
+    amount_col: str = "Amount",
+    snapshot_date: pd.Timestamp | None = None,
+) -> pd.DataFrame:
+    """Calculate RFM from an iterable of DataFrame batches to reduce memory usage."""
+    from collections import defaultdict
+
+    last_txn = defaultdict(lambda: pd.NaT)
+    freq = defaultdict(int)
+    monetary = defaultdict(float)
+
+    for batch in batches:
+        b = batch.copy()
+        if date_col in b.columns:
+            b[date_col] = pd.to_datetime(b[date_col], errors='coerce')
+        for cust, grp in b.groupby(customer_id_col):
+            max_date = grp[date_col].max()
+            if pd.isna(last_txn[cust]) or (max_date is not pd.NaT and max_date > last_txn[cust]):
+                last_txn[cust] = max_date
+            freq[cust] += len(grp)
+            monetary[cust] += grp[amount_col].sum()
+
+    if snapshot_date is None:
+        # derive from global max
+        snapshot_date = max((d for d in last_txn.values(
+        ) if d is not pd.NaT), default=pd.Timestamp.now()) + pd.Timedelta(days=1)
+
+    data = []
+    for cust in last_txn.keys():
+        recency_days = (
+            snapshot_date - last_txn[cust]).days if last_txn[cust] is not pd.NaT else None
+        data.append((cust, recency_days, freq[cust], monetary[cust]))
+
+    rfm = pd.DataFrame(
+        data, columns=[customer_id_col, 'Recency', 'Frequency', 'Monetary'])
+    return rfm
+
+
+@timer_decorator
+def cluster_rfm(rfm: pd.DataFrame, n_clusters: int = 3, random_state: int = 42) -> Tuple[pd.DataFrame, KMeans]:
+    """Scale RFM features and cluster customers using KMeans."""
     scaler = StandardScaler()
-    rfm_scaled = scaler.fit_transform(rfm[["Recency", "Frequency", "Monetary"]])
+    rfm_scaled = scaler.fit_transform(
+        rfm[["Recency", "Frequency", "Monetary"]].fillna(0))
     kmeans = KMeans(n_clusters=n_clusters, random_state=random_state)
     rfm["Cluster"] = kmeans.fit_predict(rfm_scaled)
     return rfm, kmeans
 
 
-def assign_high_risk(rfm):
-    """
-    Assign high risk (1) to the cluster with high recency, low frequency, and low monetary value.
-    """
-    cluster_stats = rfm.groupby("Cluster")[["Recency", "Frequency", "Monetary"]].mean()
+@timer_decorator
+def assign_high_risk(rfm: pd.DataFrame) -> pd.DataFrame:
+    """Assign high risk (1) to the cluster with high recency, low frequency, low monetary value."""
+    cluster_stats = rfm.groupby(
+        "Cluster")[['Recency', 'Frequency', 'Monetary']].mean()
     high_risk_cluster = cluster_stats.sort_values(
         ["Frequency", "Monetary", "Recency"], ascending=[True, True, False]
     ).index[0]
-    rfm["is_high_risk"] = (rfm["Cluster"] == high_risk_cluster).astype(int)
+    # Functional style mapping
+    rfm['is_high_risk'] = list(
+        map(lambda c: 1 if c == high_risk_cluster else 0, rfm['Cluster']))
     return rfm[["CustomerId", "is_high_risk"]]
 
 
-def merge_high_risk(df, high_risk_df, customer_id_col="CustomerId"):
-    """
-    Merge the is_high_risk label back into the main DataFrame.
-    """
+def merge_high_risk(df: pd.DataFrame, high_risk_df: pd.DataFrame, customer_id_col: str = "CustomerId") -> pd.DataFrame:
+    """Merge the is_high_risk label back into the main DataFrame."""
     return df.merge(high_risk_df, on=customer_id_col, how="left")
 
 
-def load_data_auto(input_path):
-    """
-    Try to load as CSV first, then as Excel if CSV fails.
-    """
+def load_data_auto(input_path: str) -> pd.DataFrame:
+    """Try to load as CSV first, then as Excel if CSV fails."""
     try:
-        # Try CSV with latin1 and on_bad_lines for pandas >=1.3
         df = pd.read_csv(input_path, encoding="latin1", on_bad_lines="warn")
         print(f"Loaded data as CSV: {input_path}")
         return df
@@ -95,7 +136,7 @@ if __name__ == "__main__":
     input_csv = os.path.join("data", "raw", "raw_data.csv")
     input_xlsx = os.path.join("data", "raw", "raw_data.xlsx")
     output_path = os.path.join("data", "processed", "processed_data.csv")
-    # Prefer CSV, fallback to Excel
+
     if os.path.exists(input_csv):
         df = load_data_auto(input_csv)
     elif os.path.exists(input_xlsx):
@@ -104,13 +145,15 @@ if __name__ == "__main__":
         raise FileNotFoundError(
             f"No raw data file found at {input_csv} or {input_xlsx}"
         )
-    # Calculate RFM
-    rfm = calculate_rfm(df)
-    # Cluster and assign high risk
-    rfm, _ = cluster_rfm(rfm)
-    high_risk_df = assign_high_risk(rfm)
-    # Merge back
-    df = merge_high_risk(df, high_risk_df)
+
+    # Batch RFM calculation using generator for memory efficiency
+    with profile_context('rfm_proxy'):
+        batches = data_generator(df, batch_size=10000)
+        rfm = calculate_rfm_streaming(batches)
+        rfm, _ = cluster_rfm(rfm)
+        high_risk_df = assign_high_risk(rfm)
+        df = merge_high_risk(df, high_risk_df)
+
     # Save
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     df.to_csv(output_path, index=False)
