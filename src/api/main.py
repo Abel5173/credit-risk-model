@@ -16,6 +16,7 @@ except Exception as e:
     model = None
     print(f"Failed to load model: {e}")
 
+
 @app.post("/predict", response_model=PredictResponse)
 def predict(request: PredictRequest):
     if model is None:

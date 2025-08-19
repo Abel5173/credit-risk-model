@@ -109,3 +109,5 @@ pytest
 fastapi
 uvicorn
 flake8
+xverse
+statsmodels

@@ -43,7 +43,8 @@ def cluster_rfm(rfm, n_clusters=3, random_state=42):
     Scale RFM features and cluster customers using KMeans.
     """
     scaler = StandardScaler()
-    rfm_scaled = scaler.fit_transform(rfm[["Recency", "Frequency", "Monetary"]])
+    rfm_scaled = scaler.fit_transform(rfm[["Recency", "Frequency",
+                                           "Monetary"]])
     kmeans = KMeans(n_clusters=n_clusters, random_state=random_state)
     rfm["Cluster"] = kmeans.fit_predict(rfm_scaled)
     return rfm, kmeans
@@ -51,11 +52,14 @@ def cluster_rfm(rfm, n_clusters=3, random_state=42):
 
 def assign_high_risk(rfm):
     """
-    Assign high risk (1) to the cluster with high recency, low frequency, and low monetary value.
+    Assign high risk (1) to the cluster with high recency, low frequency,
+    and low monetary value.
     """
-    cluster_stats = rfm.groupby("Cluster")[["Recency", "Frequency", "Monetary"]].mean()
+    cluster_stats = rfm.groupby("Cluster")[["Recency", "Frequency",
+                                            "Monetary"]].mean()
     high_risk_cluster = cluster_stats.sort_values(
-        ["Frequency", "Monetary", "Recency"], ascending=[True, True, False]
+        ["Frequency", "Monetary", "Recency"],
+        ascending=[True, True, False]
     ).index[0]
     rfm["is_high_risk"] = (rfm["Cluster"] == high_risk_cluster).astype(int)
     return rfm[["CustomerId", "is_high_risk"]]
@@ -86,7 +90,9 @@ def load_data_auto(input_path):
         except Exception as e_xlsx:
             print(f"Excel load failed: {e_xlsx}")
             raise RuntimeError(
-                f"Failed to load data as CSV or Excel. Please check your file format.\nCSV error: {e_csv}\nExcel error: {e_xlsx}"
+                f"Failed to load data as CSV or Excel. "
+                f"Please check your file format.\nCSV error: {e_csv}\n"
+                f"Excel error: {e_xlsx}"
             )
 
 

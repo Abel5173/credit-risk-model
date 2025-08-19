@@ -1,8 +1,5 @@
 import sys
 import os
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 import pandas as pd
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.linear_model import LogisticRegression
@@ -16,6 +13,9 @@ from sklearn.metrics import (
 )
 import mlflow
 import mlflow.sklearn
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                "..")))
 from src.data_processing import build_feature_engineering_pipeline
 
 # List of columns to drop after feature engineering (IDs, timestamps, etc.)
@@ -39,7 +39,8 @@ def load_data(path):
 
 def get_X_y(df):
     X = df.drop(
-        [col for col in NON_FEATURE_COLS if col in df.columns], axis=1, errors="ignore"
+        [col for col in NON_FEATURE_COLS if col in df.columns], axis=1,
+        errors="ignore"
     )
     y = df["is_high_risk"]
     # Keep only numeric columns for model training
@@ -50,14 +51,16 @@ def get_X_y(df):
 def evaluate_model(model, X_test, y_test):
     y_pred = model.predict(X_test)
     y_proba = (
-        model.predict_proba(X_test)[:, 1] if hasattr(model, "predict_proba") else None
+        model.predict_proba(X_test)[:, 1] if hasattr(model, "predict_proba")
+        else None
     )
     metrics = {
         "accuracy": accuracy_score(y_test, y_pred),
         "precision": precision_score(y_test, y_pred),
         "recall": recall_score(y_test, y_pred),
         "f1": f1_score(y_test, y_pred),
-        "roc_auc": roc_auc_score(y_test, y_proba) if y_proba is not None else None,
+        "roc_auc": roc_auc_score(y_test, y_proba) if y_proba is not None
+        else None,
     }
     return metrics
 
@@ -104,7 +107,8 @@ if __name__ == "__main__":
     lr = LogisticRegression(max_iter=1000)
     lr_param_grid = {"C": [0.01, 0.1, 1, 10]}
     best_lr, lr_metrics = train_and_log_model(
-        lr, lr_param_grid, X_train, y_train, X_test, y_test, "LogisticRegression"
+        lr, lr_param_grid, X_train, y_train, X_test, y_test,
+        "LogisticRegression"
     )
     # Random Forest
     rf = RandomForestClassifier(random_state=42)
