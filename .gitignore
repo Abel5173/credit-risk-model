@@ -164,6 +164,7 @@ $RECYCLE.BIN/
 *.lnk
 
 # Data files
+data
 data/*
 data/raw/*
 data/processed/*

@@ -104,8 +104,16 @@ wcwidth==0.2.13
 webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.8.0
-mlflow
-pytest
-fastapi
-uvicorn
-flake8
+# Core runtime deps
+mlflow>=2.0
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.4
+xverse>=1.0.6
+shap>=0.45.0
+streamlit>=1.37.0
+# Dev/testing
+pytest>=8.2
+flake8>=7.0
