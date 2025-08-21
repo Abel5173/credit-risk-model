@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## 2025-08-21
 
 ### Added
+
 - Robust EDA notebook updates:
   - Auto-detect `target` (`is_high_risk`/`FraudResult`) and `time` columns with graceful fallbacks.
   - Safer plots (skip when cols missing) and new RFM sanity checks + leakage guard section.
@@ -28,6 +29,7 @@ All notable changes to this project will be documented in this file.
   - Expanded tests: `tests/test_model_utils.py`, `tests/test_integration.py`, and updates to `tests/test_data_processing.py`.
 
 ### Changed
+
 - `src/data_processing.py`: stricter feature pipeline (aggregate → datetime → optional WOE → drop ID/time → ColumnTransformer with DataFrame-friendly output).
 - `src/train.py`: safer model registration (try/except), consistent logging to MLflow.
 - `src/rfm_proxy.py`: refactored to streaming/batched RFM calculation.
@@ -35,9 +37,11 @@ All notable changes to this project will be documented in this file.
 - `requirements.txt`: added/pinned packages (scikit-learn, xverse, mlflow, shap, streamlit, etc.).
 
 ### Fixed
+
 - Reduced leakage by dropping identifiers and timestamps before modeling.
 - WOE transformer now handles empty/absent columns gracefully (no-op behavior).
 
 ### Notes
+
 - Promote the trained model to "Production" in MLflow UI so API and dashboard load it by default.
 - `docker-compose.yml` sets up MLflow with SQLite backend and serves artifacts for cross-service access.

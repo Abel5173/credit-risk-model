@@ -10,6 +10,7 @@ This guide explains the architecture, key components, and how they work together
 ## Components
 
 ### Data & Proxy Labeling (`src/rfm_proxy.py`)
+
 - Loads raw data from `data/raw/` and produces `data/processed/processed_data.csv`.
 - Computes RFM metrics per customer:
   - Recency: days since last transaction
@@ -19,6 +20,7 @@ This guide explains the architecture, key components, and how they work together
 - Streaming/batched computation using `utils.data_generator` to handle large inputs.
 
 ### Feature Engineering (`src/data_processing.py`)
+
 - AggregateFeatures: per-customer aggregations (e.g., rolling counts, sums if applicable).
 - DateTimeFeatures: extracts components (hour, day of week, etc.).
 - WOETransformer: encodes selected categoricals using Weight of Evidence (monotonic binning).
@@ -28,6 +30,7 @@ This guide explains the architecture, key components, and how they work together
 - Returns DataFrame-friendly outputs for traceability.
 
 ### Modeling & Training (`src/train.py`)
+
 - End-to-end sklearn Pipelines:
   - Pipeline(steps=[('features', build_feature_engineering_pipeline(...)), ('clf', Estimator)])
 - GridSearchCV with ROC-AUC scoring.
@@ -37,22 +40,26 @@ This guide explains the architecture, key components, and how they work together
 - Attempts model registration in MLflow Model Registry; guarded with try/except.
 
 ### Serving (`src/api/`)
+
 - FastAPI service loads the Production model from the MLflow Registry.
 - `/health` endpoint for liveness checks.
 - `/predict` accepts transaction records and returns risk probability, credit score, and loan terms.
 - Pydantic schemas relaxed to accept partially filled inputs for demos.
 
 ### Explainability (`src/explainability.py`)
+
 - Generates SHAP values.
 - If inside an active MLflow run, logs SHAP plots as artifacts.
 - Works with Pipelines by transforming through the feature step.
 
 ### Dashboard (`src/dashboard.py`)
+
 - Streamlit app for non-technical stakeholders.
 - Upload CSV → computes aggregate risk/score/loan; shows SHAP summary.
 - Loads the Production model from the Registry.
 
 ### Utilities (`src/utils.py`, `src/model_utils.py`)
+
 - Timing and profiling utilities to measure performance.
 - Business mapping utilities for credit score and loan suggestions (cached functions).
 
