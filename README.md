@@ -11,6 +11,11 @@ Key highlights:
 - Streamlit dashboard for stakeholders with SHAP explanations
 - Dockerized services and CI-ready test suite
 
+See also:
+
+- CHANGELOG: ./CHANGELOG.md
+- Implementation Guide: ./IMPLEMENTATION.md
+
 ## 1) Problem
 
 Decide who to approve, how much to lend, and for how long, using transaction behavior. Reduce default risk while preserving approvals and revenue. Provide interpretable and auditable models.
